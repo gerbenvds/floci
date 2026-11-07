@@ -77,7 +77,7 @@ PREFIX ?= $(HOME)/.local
 .PHONY: help dev build test native native-host run-native native-install native-image native-up native-down native-logs clean-sidecars clean-volumes compat docker-tests \
         docs-sync docs-check docs-test partition-check partition-baseline partition-audit partition-test rename-test \
         slr-check slr-table slr-audit slr-test snapshot-mine snapshot-mine-test \
-        aws-data-sync aws-data-sync-botocore aws-data-check aws-data-check-botocore aws-data-test botocore-bump eks-addons-sync \
+        aws-data-sync aws-data-sync-botocore aws-data-check aws-data-check-botocore aws-data-test aws-capture-test botocore-bump eks-addons-sync \
         iam-namespaces-sync iam-namespaces-check iam-namespaces-verify iam-namespaces-test \
         iam-action-resources-sync iam-action-resources-check iam-action-resources-verify \
         iam-action-resources-test iam-authorized-actions-sync iam-authorized-actions-check \
@@ -449,6 +449,9 @@ eks-addons-sync: ## Regenerate src/main/resources/eks/addon-versions.json from E
 
 aws-data-test: ## Run the AWS data generators' unit tests
 	$(PYTHON) -m pytest tools/aws -q
+
+aws-capture-test: ## Run the AWS oracle capture tools' offline unit tests
+	$(PYTHON) -m pytest tools/aws-capture -q
 
 iam-namespaces-sync: ## Regenerate src/main/resources/aws/iam-service-namespaces.json from AWS (commit the result)
 	$(PYTHON) tools/aws/regen_service_namespaces.py

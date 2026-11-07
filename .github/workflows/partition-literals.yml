@@ -21,6 +21,7 @@ on:
       - 'tools/java_sources.py'
       - 'tools/rename/**'
       - 'tools/aws/**'
+      - 'tools/aws-capture/**'
       - 'tools/slr/**'
       - 'src/main/resources/iam/service-linked-roles.tsv'
       - 'src/main/resources/iam/managed-policy-documents.json'
@@ -39,6 +40,7 @@ on:
       - 'tools/java_sources.py'
       - 'tools/rename/**'
       - 'tools/aws/**'
+      - 'tools/aws-capture/**'
       - 'tools/slr/**'
       - 'src/main/resources/iam/service-linked-roles.tsv'
       - 'src/main/resources/iam/managed-policy-documents.json'
@@ -105,6 +107,9 @@ jobs:
 
       - name: Run generator tests
         run: make aws-data-test
+
+      - name: Run capture tool tests
+        run: make aws-capture-test
 
       - name: Check DynamoDB condition request members
         run: make dynamodb-condition-keys-check

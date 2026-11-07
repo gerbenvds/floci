@@ -1,0 +1,1149 @@
+{
+  "provenance": {
+    "verification": "Verified on Live AWS",
+    "source": "capture_resource_policies.py --service s3",
+    "operation": "PutBucketPolicy",
+    "capturedAt": "2026-11-07T08:53:46+00:00",
+    "region": "eu-north-1",
+    "endpoint": "https://s3.eu-north-1.amazonaws.com",
+    "cli": "aws-cli/2.36.40",
+    "inputs": "Synthetic policies only, sent to one scratch resource that the capture created and deleted.",
+    "normalization": "The caller's account id reads 111122223333 and the scratch resource floci-policy-capture, in policies and messages alike.",
+    "reference": "https://docs.aws.amazon.com/AmazonS3/latest/API/API_PutBucketPolicy.html"
+  },
+  "cases": [
+    {
+      "id": "json-not-json",
+      "policy": "not json",
+      "error": {
+        "status": 400,
+        "code": "MalformedPolicy",
+        "message": "Policies must be valid JSON and the first byte must be '{'"
+      }
+    },
+    {
+      "id": "json-array",
+      "policy": "[1]",
+      "error": {
+        "status": 400,
+        "code": "MalformedPolicy",
+        "message": "Policies must be valid JSON and the first byte must be '{'"
+      }
+    },
+    {
+      "id": "json-leading-whitespace",
+      "policy": " {\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"arn:aws:iam::111122223333:root\"},\"Action\":\"s3:GetObject\",\"Resource\":\"arn:aws:s3:::floci-policy-capture/*\"}]}",
+      "error": {
+        "status": 400,
+        "code": "MalformedPolicy",
+        "message": "Policies must be valid JSON and the first byte must be '{'"
+      }
+    },
+    {
+      "id": "json-broken",
+      "policy": "{bad",
+      "error": {
+        "status": 400,
+        "code": "MalformedPolicy",
+        "message": "This policy contains invalid Json"
+      }
+    },
+    {
+      "id": "json-trailing-content",
+      "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"arn:aws:iam::111122223333:root\"},\"Action\":\"s3:GetObject\",\"Resource\":\"arn:aws:s3:::floci-policy-capture/*\"}]} x",
+      "error": {
+        "status": 400,
+        "code": "MalformedPolicy",
+        "message": "Invalid policy syntax."
+      }
+    },
+    {
+      "id": "json-trailing-whitespace",
+      "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"arn:aws:iam::111122223333:root\"},\"Action\":\"s3:GetObject\",\"Resource\":\"arn:aws:s3:::floci-policy-capture/*\"}]}\n",
+      "accepted": true
+    },
+    {
+      "id": "json-pretty-printed",
+      "policy": "{\n  \"Version\": \"2012-10-17\",\n  \"Statement\": [\n    {\n      \"Effect\": \"Allow\",\n      \"Principal\": {\n        \"AWS\": \"arn:aws:iam::111122223333:root\"\n      },\n      \"Action\": \"s3:GetObject\",\n      \"Resource\": \"arn:aws:s3:::floci-policy-capture/*\"\n    }\n  ]\n}",
+      "accepted": true
+    },
+    {
+      "id": "document-no-version",
+      "policy": "{\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"arn:aws:iam::111122223333:root\"},\"Action\":\"s3:GetObject\",\"Resource\":\"arn:aws:s3:::floci-policy-capture/*\"}]}",
+      "accepted": true
+    },
+    {
+      "id": "document-2008-version",
+      "policy": "{\"Version\":\"2008-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"arn:aws:iam::111122223333:root\"},\"Action\":\"s3:GetObject\",\"Resource\":\"arn:aws:s3:::floci-policy-capture/*\"}]}",
+      "accepted": true
+    },
+    {
+      "id": "document-unknown-element",
+      "policy": "{\"Version\":\"2012-10-17\",\"Foo\":1,\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"arn:aws:iam::111122223333:root\"},\"Action\":\"s3:GetObject\",\"Resource\":\"arn:aws:s3:::floci-policy-capture/*\"}]}",
+      "error": {
+        "status": 400,
+        "code": "MalformedPolicy",
+        "message": "Unknown field Foo"
+      }
+    },
+    {
+      "id": "document-lowercase-element",
+      "policy": "{\"version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"arn:aws:iam::111122223333:root\"},\"Action\":\"s3:GetObject\",\"Resource\":\"arn:aws:s3:::floci-policy-capture/*\"}]}",
+      "error": {
+        "status": 400,
+        "code": "MalformedPolicy",
+        "message": "Unknown field version"
+      }
+    },
+    {
+      "id": "document-bad-version",
+      "policy": "{\"Version\":\"2013-01-01\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"arn:aws:iam::111122223333:root\"},\"Action\":\"s3:GetObject\",\"Resource\":\"arn:aws:s3:::floci-policy-capture/*\"}]}",
+      "error": {
+        "status": 400,
+        "code": "MalformedPolicy",
+        "message": "The policy must contain a valid version string"
+      }
+    },
+    {
+      "id": "document-numeric-version",
+      "policy": "{\"Version\":2012,\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"arn:aws:iam::111122223333:root\"},\"Action\":\"s3:GetObject\",\"Resource\":\"arn:aws:s3:::floci-policy-capture/*\"}]}",
+      "error": {
+        "status": 400,
+        "code": "MalformedPolicy",
+        "message": "The policy must contain a valid version string"
+      }
+    },
+    {
+      "id": "document-numeric-id",
+      "policy": "{\"Version\":\"2012-10-17\",\"Id\":1,\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"arn:aws:iam::111122223333:root\"},\"Action\":\"s3:GetObject\",\"Resource\":\"arn:aws:s3:::floci-policy-capture/*\"}]}",
+      "error": {
+        "status": 400,
+        "code": "MalformedPolicy",
+        "message": "Invalid policy syntax."
+      }
+    },
+    {
+      "id": "document-empty",
+      "policy": "{}",
+      "error": {
+        "status": 400,
+        "code": "MalformedPolicy",
+        "message": "Missing required field Statement"
+      }
+    },
+    {
+      "id": "document-no-statement",
+      "policy": "{\"Version\":\"2012-10-17\"}",
+      "error": {
+        "status": 400,
+        "code": "MalformedPolicy",
+        "message": "Missing required field Statement"
+      }
+    },
+    {
+      "id": "document-repeated-element",
+      "policy": "{\"Version\":\"2012-10-17\",\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"arn:aws:iam::111122223333:root\"},\"Action\":\"s3:GetObject\",\"Resource\":\"arn:aws:s3:::floci-policy-capture/*\"}]}",
+      "error": {
+        "status": 400,
+        "code": "MalformedPolicy",
+        "message": "Statement/policy already has instance of Version"
+      }
+    },
+    {
+      "id": "document-version-last",
+      "policy": "{\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"arn:aws:iam::111122223333:root\"},\"Action\":\"s3:GetObject\",\"Resource\":\"arn:aws:s3:::floci-policy-capture/*\"}],\"Version\":\"2012-10-17\"}",
+      "accepted": true
+    },
+    {
+      "id": "statement-single-object",
+      "policy": "{\"Version\":\"2012-10-17\",\"Statement\":{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"arn:aws:iam::111122223333:root\"},\"Action\":\"s3:GetObject\",\"Resource\":\"arn:aws:s3:::floci-policy-capture/*\"}}",
+      "accepted": true
+    },
+    {
+      "id": "statement-empty-list",
+      "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[]}",
+      "error": {
+        "status": 400,
+        "code": "MalformedPolicy",
+        "message": "Could not parse the policy: Statement is empty!"
+      }
+    },
+    {
+      "id": "statement-string",
+      "policy": "{\"Version\":\"2012-10-17\",\"Statement\":\"x\"}",
+      "error": {
+        "status": 400,
+        "code": "MalformedPolicy",
+        "message": "Could not parse the policy: Statement is not well formatted."
+      }
+    },
+    {
+      "id": "statement-null",
+      "policy": "{\"Version\":\"2012-10-17\",\"Statement\":null}",
+      "error": {
+        "status": 400,
+        "code": "MalformedPolicy",
+        "message": "Could not parse the policy: Statement is not well formatted."
+      }
+    },
+    {
+      "id": "statement-not-object",
+      "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[1]}",
+      "error": {
+        "status": 400,
+        "code": "MalformedPolicy",
+        "message": "Could not parse the policy: Statement is not well formatted."
+      }
+    },
+    {
+      "id": "statement-empty-object",
+      "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{}]}",
+      "error": {
+        "status": 400,
+        "code": "MalformedPolicy",
+        "message": "Missing required field Effect"
+      }
+    },
+    {
+      "id": "statement-unknown-element",
+      "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"arn:aws:iam::111122223333:root\"},\"Action\":\"s3:GetObject\",\"Resource\":\"arn:aws:s3:::floci-policy-capture/*\",\"Foo\":1}]}",
+      "error": {
+        "status": 400,
+        "code": "MalformedPolicy",
+        "message": "Unknown field Foo"
+      }
+    },
+    {
+      "id": "statement-lowercase-element",
+      "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"effect\":\"Allow\",\"Principal\":{\"AWS\":\"arn:aws:iam::111122223333:root\"},\"Action\":\"s3:GetObject\",\"Resource\":\"arn:aws:s3:::floci-policy-capture/*\"}]}",
+      "error": {
+        "status": 400,
+        "code": "MalformedPolicy",
+        "message": "Unknown field effect"
+      }
+    },
+    {
+      "id": "statement-repeated-element",
+      "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"arn:aws:iam::111122223333:root\"},\"Action\":\"s3:GetObject\",\"Resource\":\"arn:aws:s3:::floci-policy-capture/*\",\"Effect\":\"Deny\"}]}",
+      "error": {
+        "status": 400,
+        "code": "MalformedPolicy",
+        "message": "Statement/policy already has instance of Effect"
+      }
+    },
+    {
+      "id": "sid-numeric",
+      "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Sid\":1,\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"arn:aws:iam::111122223333:root\"},\"Action\":\"s3:GetObject\",\"Resource\":\"arn:aws:s3:::floci-policy-capture/*\"}]}",
+      "error": {
+        "status": 400,
+        "code": "MalformedPolicy",
+        "message": "Invalid policy syntax."
+      }
+    },
+    {
+      "id": "sid-empty",
+      "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Sid\":\"\",\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"arn:aws:iam::111122223333:root\"},\"Action\":\"s3:GetObject\",\"Resource\":\"arn:aws:s3:::floci-policy-capture/*\"}]}",
+      "accepted": true
+    },
+    {
+      "id": "sid-punctuation",
+      "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Sid\":\"a b-c!\",\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"arn:aws:iam::111122223333:root\"},\"Action\":\"s3:GetObject\",\"Resource\":\"arn:aws:s3:::floci-policy-capture/*\"}]}",
+      "accepted": true
+    },
+    {
+      "id": "sid-repeated",
+      "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Sid\":\"A\",\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"arn:aws:iam::111122223333:root\"},\"Action\":\"s3:GetObject\",\"Resource\":\"arn:aws:s3:::floci-policy-capture/*\"},{\"Sid\":\"A\",\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"arn:aws:iam::111122223333:root\"},\"Action\":\"s3:GetObject\",\"Resource\":\"arn:aws:s3:::floci-policy-capture/*\"}]}",
+      "accepted": true
+    },
+    {
+      "id": "effect-missing",
+      "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Principal\":{\"AWS\":\"arn:aws:iam::111122223333:root\"},\"Action\":\"s3:GetObject\",\"Resource\":\"arn:aws:s3:::floci-policy-capture/*\"}]}",
+      "error": {
+        "status": 400,
+        "code": "MalformedPolicy",
+        "message": "Missing required field Effect"
+      }
+    },
+    {
+      "id": "effect-empty",
+      "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"\",\"Principal\":{\"AWS\":\"arn:aws:iam::111122223333:root\"},\"Action\":\"s3:GetObject\",\"Resource\":\"arn:aws:s3:::floci-policy-capture/*\"}]}",
+      "error": {
+        "status": 400,
+        "code": "MalformedPolicy",
+        "message": "Missing required field Effect cannot be empty!"
+      }
+    },
+    {
+      "id": "effect-unknown",
+      "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Permit\",\"Principal\":{\"AWS\":\"arn:aws:iam::111122223333:root\"},\"Action\":\"s3:GetObject\",\"Resource\":\"arn:aws:s3:::floci-policy-capture/*\"}]}",
+      "error": {
+        "status": 400,
+        "code": "MalformedPolicy",
+        "message": "Invalid effect: Permit"
+      }
+    },
+    {
+      "id": "effect-numeric",
+      "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":1,\"Principal\":{\"AWS\":\"arn:aws:iam::111122223333:root\"},\"Action\":\"s3:GetObject\",\"Resource\":\"arn:aws:s3:::floci-policy-capture/*\"}]}",
+      "error": {
+        "status": 400,
+        "code": "MalformedPolicy",
+        "message": "Invalid policy syntax."
+      }
+    },
+    {
+      "id": "effect-lowercase-allow",
+      "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"allow\",\"Principal\":{\"AWS\":\"arn:aws:iam::111122223333:root\"},\"Action\":\"s3:GetObject\",\"Resource\":\"arn:aws:s3:::floci-policy-capture/*\"}]}",
+      "accepted": true
+    },
+    {
+      "id": "effect-lowercase-deny",
+      "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"deny\",\"Principal\":{\"AWS\":\"arn:aws:iam::111122223333:root\"},\"Action\":\"s3:GetObject\",\"Resource\":\"arn:aws:s3:::floci-policy-capture/*\"}]}",
+      "accepted": true
+    },
+    {
+      "id": "principal-missing",
+      "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Action\":\"s3:GetObject\",\"Resource\":\"arn:aws:s3:::floci-policy-capture/*\"}]}",
+      "error": {
+        "status": 400,
+        "code": "MalformedPolicy",
+        "message": "Missing required field Principal"
+      }
+    },
+    {
+      "id": "principal-and-not-principal",
+      "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"arn:aws:iam::111122223333:root\"},\"Action\":\"s3:GetObject\",\"Resource\":\"arn:aws:s3:::floci-policy-capture/*\",\"NotPrincipal\":{\"AWS\":\"arn:aws:iam::111122223333:root\"}}]}",
+      "error": {
+        "status": 400,
+        "code": "MalformedPolicy",
+        "message": "Statement/policy already has instance of Principal"
+      }
+    },
+    {
+      "id": "principal-string",
+      "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":\"me\",\"Action\":\"s3:GetObject\",\"Resource\":\"arn:aws:s3:::floci-policy-capture/*\"}]}",
+      "error": {
+        "status": 400,
+        "code": "MalformedPolicy",
+        "message": "Invalid policy syntax."
+      }
+    },
+    {
+      "id": "principal-unknown-type",
+      "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"Foo\":\"x\"},\"Action\":\"s3:GetObject\",\"Resource\":\"arn:aws:s3:::floci-policy-capture/*\"}]}",
+      "error": {
+        "status": 400,
+        "code": "MalformedPolicy",
+        "message": "Invalid policy syntax."
+      }
+    },
+    {
+      "id": "principal-empty-object",
+      "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{},\"Action\":\"s3:GetObject\",\"Resource\":\"arn:aws:s3:::floci-policy-capture/*\"}]}",
+      "error": {
+        "status": 400,
+        "code": "MalformedPolicy",
+        "message": "Missing required field Principal cannot be empty!"
+      }
+    },
+    {
+      "id": "principal-empty-list",
+      "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":[]},\"Action\":\"s3:GetObject\",\"Resource\":\"arn:aws:s3:::floci-policy-capture/*\"}]}",
+      "error": {
+        "status": 400,
+        "code": "MalformedPolicy",
+        "message": "Missing required field Principal cannot be empty!"
+      }
+    },
+    {
+      "id": "principal-aws-name",
+      "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"bob\"},\"Action\":\"s3:GetObject\",\"Resource\":\"arn:aws:s3:::floci-policy-capture/*\"}]}",
+      "error": {
+        "status": 400,
+        "code": "MalformedPolicy",
+        "message": "Invalid principal in policy"
+      }
+    },
+    {
+      "id": "principal-empty-service",
+      "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"\"},\"Action\":\"s3:GetObject\",\"Resource\":\"arn:aws:s3:::floci-policy-capture/*\"}]}",
+      "error": {
+        "status": 400,
+        "code": "MalformedPolicy",
+        "message": "Invalid principal in policy"
+      }
+    },
+    {
+      "id": "principal-account",
+      "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"111122223333\"},\"Action\":\"s3:GetObject\",\"Resource\":\"arn:aws:s3:::floci-policy-capture/*\"}]}",
+      "accepted": true
+    },
+    {
+      "id": "principal-federated",
+      "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"Federated\":\"cognito-identity.amazonaws.com\"},\"Action\":\"s3:GetObject\",\"Resource\":\"arn:aws:s3:::floci-policy-capture/*\"}]}",
+      "accepted": true
+    },
+    {
+      "id": "principal-wildcard",
+      "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Deny\",\"Principal\":\"*\",\"Action\":\"s3:GetObject\",\"Resource\":\"arn:aws:s3:::floci-policy-capture/*\"}]}",
+      "accepted": true
+    },
+    {
+      "id": "principal-aws-wildcard",
+      "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Deny\",\"Principal\":{\"AWS\":\"*\"},\"Action\":\"s3:GetObject\",\"Resource\":\"arn:aws:s3:::floci-policy-capture/*\"}]}",
+      "accepted": true
+    },
+    {
+      "id": "principal-not-principal",
+      "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Deny\",\"NotPrincipal\":{\"AWS\":\"arn:aws:iam::111122223333:root\"},\"Action\":\"s3:GetObject\",\"Resource\":\"arn:aws:s3:::floci-policy-capture/*\"}]}",
+      "accepted": true
+    },
+    {
+      "id": "principal-repeated-type",
+      "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"arn:aws:iam::111122223333:root\",\"AWS\":\"arn:aws:iam::111122223333:root\"},\"Action\":\"s3:GetObject\",\"Resource\":\"arn:aws:s3:::floci-policy-capture/*\"}]}",
+      "accepted": true
+    },
+    {
+      "id": "action-missing",
+      "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"arn:aws:iam::111122223333:root\"},\"Resource\":\"arn:aws:s3:::floci-policy-capture/*\"}]}",
+      "error": {
+        "status": 400,
+        "code": "MalformedPolicy",
+        "message": "Missing required field Action"
+      }
+    },
+    {
+      "id": "action-and-not-action",
+      "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"arn:aws:iam::111122223333:root\"},\"Action\":\"s3:GetObject\",\"Resource\":\"arn:aws:s3:::floci-policy-capture/*\",\"NotAction\":\"s3:GetObject\"}]}",
+      "error": {
+        "status": 400,
+        "code": "MalformedPolicy",
+        "message": "Statement/policy already has instance of Action"
+      }
+    },
+    {
+      "id": "action-not-action",
+      "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"arn:aws:iam::111122223333:root\"},\"NotAction\":\"s3:GetObject\",\"Resource\":\"arn:aws:s3:::floci-policy-capture/*\"}]}",
+      "accepted": true
+    },
+    {
+      "id": "action-without-service",
+      "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"arn:aws:iam::111122223333:root\"},\"Action\":\"GetObject\",\"Resource\":\"arn:aws:s3:::floci-policy-capture/*\"}]}",
+      "error": {
+        "status": 400,
+        "code": "MalformedPolicy",
+        "message": "Policy has invalid action"
+      }
+    },
+    {
+      "id": "action-without-name",
+      "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"arn:aws:iam::111122223333:root\"},\"Action\":\"s3:\",\"Resource\":\"arn:aws:s3:::floci-policy-capture/*\"}]}",
+      "error": {
+        "status": 400,
+        "code": "MalformedPolicy",
+        "message": "Policy has invalid action"
+      }
+    },
+    {
+      "id": "action-with-space",
+      "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"arn:aws:iam::111122223333:root\"},\"Action\":\"s3:Get Object\",\"Resource\":\"arn:aws:s3:::floci-policy-capture/*\"}]}",
+      "error": {
+        "status": 400,
+        "code": "MalformedPolicy",
+        "message": "Policy has invalid action"
+      }
+    },
+    {
+      "id": "action-empty-list",
+      "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"arn:aws:iam::111122223333:root\"},\"Action\":[],\"Resource\":\"arn:aws:s3:::floci-policy-capture/*\"}]}",
+      "error": {
+        "status": 400,
+        "code": "MalformedPolicy",
+        "message": "Missing required field Action cannot be empty!"
+      }
+    },
+    {
+      "id": "action-numeric",
+      "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"arn:aws:iam::111122223333:root\"},\"Action\":1,\"Resource\":\"arn:aws:s3:::floci-policy-capture/*\"}]}",
+      "error": {
+        "status": 400,
+        "code": "MalformedPolicy",
+        "message": "Invalid policy syntax."
+      }
+    },
+    {
+      "id": "action-wildcard-service-and-name",
+      "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"arn:aws:iam::111122223333:root\"},\"Action\":\"*:*\",\"Resource\":\"arn:aws:s3:::floci-policy-capture/*\"}]}",
+      "accepted": true
+    },
+    {
+      "id": "action-wildcard-name",
+      "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"arn:aws:iam::111122223333:root\"},\"Action\":\"s3:*\",\"Resource\":\"arn:aws:s3:::floci-policy-capture/*\"}]}",
+      "accepted": true
+    },
+    {
+      "id": "resource-missing",
+      "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"arn:aws:iam::111122223333:root\"},\"Action\":\"s3:GetObject\"}]}",
+      "error": {
+        "status": 400,
+        "code": "MalformedPolicy",
+        "message": "Statement is missing required element"
+      }
+    },
+    {
+      "id": "resource-and-not-resource",
+      "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"arn:aws:iam::111122223333:root\"},\"Action\":\"s3:GetObject\",\"Resource\":\"arn:aws:s3:::floci-policy-capture/*\",\"NotResource\":\"arn:aws:s3:::floci-policy-capture/*\"}]}",
+      "error": {
+        "status": 400,
+        "code": "MalformedPolicy",
+        "message": "Statement/policy already has instance of Resource"
+      }
+    },
+    {
+      "id": "resource-not-resource",
+      "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"arn:aws:iam::111122223333:root\"},\"Action\":\"s3:GetObject\",\"NotResource\":\"arn:aws:s3:::floci-policy-capture/*\"}]}",
+      "error": {
+        "status": 400,
+        "code": "MalformedPolicy",
+        "message": "Action does not apply to any resource(s) in statement"
+      }
+    },
+    {
+      "id": "resource-not-arn",
+      "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"arn:aws:iam::111122223333:root\"},\"Action\":\"s3:GetObject\",\"Resource\":\"mybucket\"}]}",
+      "error": {
+        "status": 400,
+        "code": "MalformedPolicy",
+        "message": "Policy has invalid resource"
+      }
+    },
+    {
+      "id": "resource-partial-arn",
+      "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"arn:aws:iam::111122223333:root\"},\"Action\":\"s3:GetObject\",\"Resource\":\"arn:aws:s3\"}]}",
+      "error": {
+        "status": 400,
+        "code": "MalformedPolicy",
+        "message": "Policy has invalid resource"
+      }
+    },
+    {
+      "id": "resource-empty-list",
+      "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"arn:aws:iam::111122223333:root\"},\"Action\":\"s3:GetObject\",\"Resource\":[]}]}",
+      "error": {
+        "status": 400,
+        "code": "MalformedPolicy",
+        "message": "Action does not apply to any resource(s) in statement"
+      }
+    },
+    {
+      "id": "resource-numeric",
+      "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"arn:aws:iam::111122223333:root\"},\"Action\":\"s3:GetObject\",\"Resource\":1}]}",
+      "error": {
+        "status": 400,
+        "code": "MalformedPolicy",
+        "message": "Invalid policy syntax."
+      }
+    },
+    {
+      "id": "condition-unknown-operator",
+      "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"arn:aws:iam::111122223333:root\"},\"Action\":\"s3:GetObject\",\"Resource\":\"arn:aws:s3:::floci-policy-capture/*\",\"Condition\":{\"StringEqualz\":{\"aws:SourceIp\":\"1.2.3.4\"}}}]}",
+      "error": {
+        "status": 400,
+        "code": "MalformedPolicy",
+        "message": "Invalid Condition type : StringEqualz"
+      }
+    },
+    {
+      "id": "condition-null-if-exists",
+      "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"arn:aws:iam::111122223333:root\"},\"Action\":\"s3:GetObject\",\"Resource\":\"arn:aws:s3:::floci-policy-capture/*\",\"Condition\":{\"NullIfExists\":{\"aws:UserAgent\":\"true\"}}}]}",
+      "error": {
+        "status": 400,
+        "code": "MalformedPolicy",
+        "message": "Invalid Condition type : NullIfExists"
+      }
+    },
+    {
+      "id": "condition-unnamed-operator",
+      "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"arn:aws:iam::111122223333:root\"},\"Action\":\"s3:GetObject\",\"Resource\":\"arn:aws:s3:::floci-policy-capture/*\",\"Condition\":{\"\":{\"aws:UserAgent\":\"a\"}}}]}",
+      "error": {
+        "status": 400,
+        "code": "MalformedPolicy",
+        "message": "Invalid Condition type : "
+      }
+    },
+    {
+      "id": "condition-not-object",
+      "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"arn:aws:iam::111122223333:root\"},\"Action\":\"s3:GetObject\",\"Resource\":\"arn:aws:s3:::floci-policy-capture/*\",\"Condition\":\"x\"}]}",
+      "error": {
+        "status": 400,
+        "code": "MalformedPolicy",
+        "message": "Invalid policy syntax."
+      }
+    },
+    {
+      "id": "condition-nested-value",
+      "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"arn:aws:iam::111122223333:root\"},\"Action\":\"s3:GetObject\",\"Resource\":\"arn:aws:s3:::floci-policy-capture/*\",\"Condition\":{\"StringEquals\":{\"aws:UserAgent\":{\"a\":1}}}}]}",
+      "error": {
+        "status": 400,
+        "code": "MalformedPolicy",
+        "message": "Invalid policy syntax."
+      }
+    },
+    {
+      "id": "condition-null-value",
+      "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"arn:aws:iam::111122223333:root\"},\"Action\":\"s3:GetObject\",\"Resource\":\"arn:aws:s3:::floci-policy-capture/*\",\"Condition\":{\"StringEquals\":{\"aws:UserAgent\":null}}}]}",
+      "error": {
+        "status": 400,
+        "code": "MalformedPolicy",
+        "message": "Invalid policy syntax."
+      }
+    },
+    {
+      "id": "condition-blank-key",
+      "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"arn:aws:iam::111122223333:root\"},\"Action\":\"s3:GetObject\",\"Resource\":\"arn:aws:s3:::floci-policy-capture/*\",\"Condition\":{\"StringEquals\":{\"\":\"a\"}}}]}",
+      "error": {
+        "status": 400,
+        "code": "MalformedPolicy",
+        "message": "Policy has an invalid condition key"
+      }
+    },
+    {
+      "id": "condition-repeated-key",
+      "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"arn:aws:iam::111122223333:root\"},\"Action\":\"s3:GetObject\",\"Resource\":\"arn:aws:s3:::floci-policy-capture/*\",\"Condition\":{\"StringEquals\":{\"aws:UserAgent\":\"a\",\"aws:UserAgent\":\"b\"}}}]}",
+      "error": {
+        "status": 400,
+        "code": "MalformedPolicy",
+        "message": "Duplicate condition element: aws:UserAgent"
+      }
+    },
+    {
+      "id": "condition-repeated-operator",
+      "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"arn:aws:iam::111122223333:root\"},\"Action\":\"s3:GetObject\",\"Resource\":\"arn:aws:s3:::floci-policy-capture/*\",\"Condition\":{\"Bool\":{\"aws:SecureTransport\":\"true\"},\"Bool\":{\"aws:SecureTransport\":\"false\"}}}]}",
+      "error": {
+        "status": 400,
+        "code": "MalformedPolicy",
+        "message": "Duplicate condition element: Bool"
+      }
+    },
+    {
+      "id": "condition-boolean-value",
+      "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"arn:aws:iam::111122223333:root\"},\"Action\":\"s3:GetObject\",\"Resource\":\"arn:aws:s3:::floci-policy-capture/*\",\"Condition\":{\"Bool\":{\"aws:SecureTransport\":false}}}]}",
+      "accepted": true
+    },
+    {
+      "id": "condition-empty-values",
+      "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"arn:aws:iam::111122223333:root\"},\"Action\":\"s3:GetObject\",\"Resource\":\"arn:aws:s3:::floci-policy-capture/*\",\"Condition\":{\"StringEquals\":{\"aws:UserAgent\":[]}}}]}",
+      "accepted": true
+    },
+    {
+      "id": "condition-operator-without-keys",
+      "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"arn:aws:iam::111122223333:root\"},\"Action\":\"s3:GetObject\",\"Resource\":\"arn:aws:s3:::floci-policy-capture/*\",\"Condition\":{\"StringEquals\":{}}}]}",
+      "accepted": true
+    },
+    {
+      "id": "condition-set-operator",
+      "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"arn:aws:iam::111122223333:root\"},\"Action\":\"s3:GetObject\",\"Resource\":\"arn:aws:s3:::floci-policy-capture/*\",\"Condition\":{\"ForAnyValue:StringLike\":{\"aws:UserAgent\":\"a\"}}}]}",
+      "accepted": true
+    },
+    {
+      "id": "order-unknown-then-repeated",
+      "policy": "{\"Foo\":1,\"Version\":\"2012-10-17\",\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"arn:aws:iam::111122223333:root\"},\"Action\":\"s3:GetObject\",\"Resource\":\"arn:aws:s3:::floci-policy-capture/*\"}]}",
+      "error": {
+        "status": 400,
+        "code": "MalformedPolicy",
+        "message": "Unknown field Foo"
+      }
+    },
+    {
+      "id": "order-repeated-then-unknown",
+      "policy": "{\"Version\":\"2012-10-17\",\"Version\":\"2012-10-17\",\"Foo\":1,\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"arn:aws:iam::111122223333:root\"},\"Action\":\"s3:GetObject\",\"Resource\":\"arn:aws:s3:::floci-policy-capture/*\"}]}",
+      "error": {
+        "status": 400,
+        "code": "MalformedPolicy",
+        "message": "Unknown field Foo"
+      }
+    },
+    {
+      "id": "order-bad-version-then-unknown",
+      "policy": "{\"Version\":\"2013-01-01\",\"Foo\":1,\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"arn:aws:iam::111122223333:root\"},\"Action\":\"s3:GetObject\",\"Resource\":\"arn:aws:s3:::floci-policy-capture/*\"}]}",
+      "error": {
+        "status": 400,
+        "code": "MalformedPolicy",
+        "message": "The policy must contain a valid version string"
+      }
+    },
+    {
+      "id": "order-bad-version-then-no-statement",
+      "policy": "{\"Version\":\"2013-01-01\"}",
+      "error": {
+        "status": 400,
+        "code": "MalformedPolicy",
+        "message": "The policy must contain a valid version string"
+      }
+    },
+    {
+      "id": "order-bad-statement-then-unknown",
+      "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Permit\",\"Principal\":{\"AWS\":\"arn:aws:iam::111122223333:root\"},\"Action\":\"s3:GetObject\",\"Resource\":\"arn:aws:s3:::floci-policy-capture/*\"}],\"Foo\":1}",
+      "error": {
+        "status": 400,
+        "code": "MalformedPolicy",
+        "message": "Unknown field Foo"
+      }
+    },
+    {
+      "id": "order-bad-statement-then-bad-version",
+      "policy": "{\"Statement\":[{\"Effect\":\"Permit\",\"Principal\":{\"AWS\":\"arn:aws:iam::111122223333:root\"},\"Action\":\"s3:GetObject\",\"Resource\":\"arn:aws:s3:::floci-policy-capture/*\"}],\"Version\":\"2013-01-01\"}",
+      "error": {
+        "status": 400,
+        "code": "MalformedPolicy",
+        "message": "The policy must contain a valid version string"
+      }
+    },
+    {
+      "id": "order-unknown-then-broken-json",
+      "policy": "{\"Version\":\"2012-10-17\",\"Foo\":1,bad",
+      "error": {
+        "status": 400,
+        "code": "MalformedPolicy",
+        "message": "This policy contains invalid Json"
+      }
+    },
+    {
+      "id": "order-unknown-then-trailing-content",
+      "policy": "{\"Version\":\"2012-10-17\",\"Foo\":1,\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"arn:aws:iam::111122223333:root\"},\"Action\":\"s3:GetObject\",\"Resource\":\"arn:aws:s3:::floci-policy-capture/*\"}]} x",
+      "error": {
+        "status": 400,
+        "code": "MalformedPolicy",
+        "message": "Unknown field Foo"
+      }
+    },
+    {
+      "id": "order-bad-effect-then-unknown",
+      "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Permit\",\"Foo\":1,\"Principal\":{\"AWS\":\"arn:aws:iam::111122223333:root\"},\"Action\":\"s3:GetObject\",\"Resource\":\"arn:aws:s3:::floci-policy-capture/*\"}]}",
+      "error": {
+        "status": 400,
+        "code": "MalformedPolicy",
+        "message": "Unknown field Foo"
+      }
+    },
+    {
+      "id": "order-numeric-sid-then-unknown",
+      "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Sid\":1,\"Foo\":1,\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"arn:aws:iam::111122223333:root\"},\"Action\":\"s3:GetObject\",\"Resource\":\"arn:aws:s3:::floci-policy-capture/*\"}]}",
+      "error": {
+        "status": 400,
+        "code": "MalformedPolicy",
+        "message": "Unknown field Foo"
+      }
+    },
+    {
+      "id": "order-bad-effect-then-repeated",
+      "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Permit\",\"Principal\":{\"AWS\":\"arn:aws:iam::111122223333:root\"},\"Action\":\"s3:GetObject\",\"Resource\":\"arn:aws:s3:::floci-policy-capture/*\",\"Effect\":\"Allow\"}]}",
+      "error": {
+        "status": 400,
+        "code": "MalformedPolicy",
+        "message": "Invalid effect: Permit"
+      }
+    },
+    {
+      "id": "order-no-effect-or-principal",
+      "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Action\":\"s3:GetObject\",\"Resource\":\"arn:aws:s3:::floci-policy-capture/*\"}]}",
+      "error": {
+        "status": 400,
+        "code": "MalformedPolicy",
+        "message": "Missing required field Effect"
+      }
+    },
+    {
+      "id": "order-no-principal-or-action",
+      "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Resource\":\"arn:aws:s3:::floci-policy-capture/*\"}]}",
+      "error": {
+        "status": 400,
+        "code": "MalformedPolicy",
+        "message": "Missing required field Principal"
+      }
+    },
+    {
+      "id": "order-no-action-or-resource",
+      "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"arn:aws:iam::111122223333:root\"}}]}",
+      "error": {
+        "status": 400,
+        "code": "MalformedPolicy",
+        "message": "Missing required field Action"
+      }
+    },
+    {
+      "id": "order-numeric-action-then-no-effect",
+      "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Principal\":{\"AWS\":\"arn:aws:iam::111122223333:root\"},\"Action\":1,\"Resource\":\"arn:aws:s3:::floci-policy-capture/*\"}]}",
+      "error": {
+        "status": 400,
+        "code": "MalformedPolicy",
+        "message": "Missing required field Effect"
+      }
+    },
+    {
+      "id": "order-bad-action-then-no-effect",
+      "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Principal\":{\"AWS\":\"arn:aws:iam::111122223333:root\"},\"Action\":\"GetObject\",\"Resource\":\"arn:aws:s3:::floci-policy-capture/*\"}]}",
+      "error": {
+        "status": 400,
+        "code": "MalformedPolicy",
+        "message": "Missing required field Effect"
+      }
+    },
+    {
+      "id": "order-bad-principal-then-no-effect",
+      "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Principal\":{\"AWS\":\"bob\"},\"Action\":\"s3:GetObject\",\"Resource\":\"arn:aws:s3:::floci-policy-capture/*\"}]}",
+      "error": {
+        "status": 400,
+        "code": "MalformedPolicy",
+        "message": "Missing required field Effect"
+      }
+    },
+    {
+      "id": "order-bad-resource-then-no-action",
+      "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"arn:aws:iam::111122223333:root\"},\"Resource\":\"mybucket\"}]}",
+      "error": {
+        "status": 400,
+        "code": "MalformedPolicy",
+        "message": "Missing required field Action"
+      }
+    },
+    {
+      "id": "order-empty-resource-then-no-action",
+      "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"arn:aws:iam::111122223333:root\"},\"Resource\":[]}]}",
+      "error": {
+        "status": 400,
+        "code": "MalformedPolicy",
+        "message": "Missing required field Action"
+      }
+    },
+    {
+      "id": "order-bad-action-then-bad-resource",
+      "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"arn:aws:iam::111122223333:root\"},\"Action\":\"GetObject\",\"Resource\":\"mybucket\"}]}",
+      "error": {
+        "status": 400,
+        "code": "MalformedPolicy",
+        "message": "Policy has invalid action"
+      }
+    },
+    {
+      "id": "order-bad-resource-then-bad-action",
+      "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"arn:aws:iam::111122223333:root\"},\"Resource\":\"mybucket\",\"Action\":\"GetObject\"}]}",
+      "error": {
+        "status": 400,
+        "code": "MalformedPolicy",
+        "message": "Policy has invalid action"
+      }
+    },
+    {
+      "id": "order-bad-principal-then-bad-action",
+      "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"bob\"},\"Action\":\"GetObject\",\"Resource\":\"arn:aws:s3:::floci-policy-capture/*\"}]}",
+      "error": {
+        "status": 400,
+        "code": "MalformedPolicy",
+        "message": "Invalid principal in policy"
+      }
+    },
+    {
+      "id": "order-bad-action-then-bad-principal",
+      "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Action\":\"GetObject\",\"Principal\":{\"AWS\":\"bob\"},\"Resource\":\"arn:aws:s3:::floci-policy-capture/*\"}]}",
+      "error": {
+        "status": 400,
+        "code": "MalformedPolicy",
+        "message": "Invalid principal in policy"
+      }
+    },
+    {
+      "id": "order-bad-condition-then-bad-action",
+      "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"arn:aws:iam::111122223333:root\"},\"Condition\":{\"StringEqualz\":{\"aws:UserAgent\":\"a\"}},\"Action\":\"GetObject\",\"Resource\":\"arn:aws:s3:::floci-policy-capture/*\"}]}",
+      "error": {
+        "status": 400,
+        "code": "MalformedPolicy",
+        "message": "Invalid Condition type : StringEqualz"
+      }
+    },
+    {
+      "id": "order-bad-action-then-bad-condition",
+      "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"arn:aws:iam::111122223333:root\"},\"Action\":\"GetObject\",\"Resource\":\"arn:aws:s3:::floci-policy-capture/*\",\"Condition\":{\"StringEqualz\":{\"aws:UserAgent\":\"a\"}}}]}",
+      "error": {
+        "status": 400,
+        "code": "MalformedPolicy",
+        "message": "Invalid Condition type : StringEqualz"
+      }
+    },
+    {
+      "id": "order-not-principal-then-principal",
+      "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"NotPrincipal\":{\"AWS\":\"arn:aws:iam::111122223333:root\"},\"Principal\":{\"AWS\":\"arn:aws:iam::111122223333:root\"},\"Action\":\"s3:GetObject\",\"Resource\":\"arn:aws:s3:::floci-policy-capture/*\"}]}",
+      "error": {
+        "status": 400,
+        "code": "MalformedPolicy",
+        "message": "Statement/policy already has instance of Principal"
+      }
+    },
+    {
+      "id": "order-not-action-then-action",
+      "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"arn:aws:iam::111122223333:root\"},\"NotAction\":\"s3:GetObject\",\"Action\":\"s3:GetObject\",\"Resource\":\"arn:aws:s3:::floci-policy-capture/*\"}]}",
+      "error": {
+        "status": 400,
+        "code": "MalformedPolicy",
+        "message": "Statement/policy already has instance of Action"
+      }
+    },
+    {
+      "id": "order-bad-action-then-next-statement-no-effect",
+      "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"arn:aws:iam::111122223333:root\"},\"Action\":\"GetObject\",\"Resource\":\"arn:aws:s3:::floci-policy-capture/*\"},{\"Principal\":{\"AWS\":\"arn:aws:iam::111122223333:root\"},\"Action\":\"s3:GetObject\",\"Resource\":\"arn:aws:s3:::floci-policy-capture/*\"}]}",
+      "error": {
+        "status": 400,
+        "code": "MalformedPolicy",
+        "message": "Missing required field Effect"
+      }
+    },
+    {
+      "id": "order-first-statement-first",
+      "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"arn:aws:iam::111122223333:root\"},\"Resource\":\"arn:aws:s3:::floci-policy-capture/*\"},{\"Effect\":\"Allow\",\"Action\":\"s3:GetObject\",\"Resource\":\"arn:aws:s3:::floci-policy-capture/*\"}]}",
+      "error": {
+        "status": 400,
+        "code": "MalformedPolicy",
+        "message": "Missing required field Action"
+      }
+    },
+    {
+      "id": "order-unknown-then-bad-version",
+      "policy": "{\"Foo\":1,\"Version\":\"2013-01-01\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"arn:aws:iam::111122223333:root\"},\"Action\":\"s3:GetObject\",\"Resource\":\"arn:aws:s3:::floci-policy-capture/*\"}]}",
+      "error": {
+        "status": 400,
+        "code": "MalformedPolicy",
+        "message": "The policy must contain a valid version string"
+      }
+    },
+    {
+      "id": "order-numeric-id-then-unknown",
+      "policy": "{\"Version\":\"2012-10-17\",\"Id\":1,\"Foo\":1,\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"arn:aws:iam::111122223333:root\"},\"Action\":\"s3:GetObject\",\"Resource\":\"arn:aws:s3:::floci-policy-capture/*\"}]}",
+      "error": {
+        "status": 400,
+        "code": "MalformedPolicy",
+        "message": "Unknown field Foo"
+      }
+    },
+    {
+      "id": "order-repeated-then-bad-version",
+      "policy": "{\"Version\":\"2012-10-17\",\"Version\":\"2013-01-01\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"arn:aws:iam::111122223333:root\"},\"Action\":\"s3:GetObject\",\"Resource\":\"arn:aws:s3:::floci-policy-capture/*\"}]}",
+      "error": {
+        "status": 400,
+        "code": "MalformedPolicy",
+        "message": "The policy must contain a valid version string"
+      }
+    },
+    {
+      "id": "order-statement-string-then-unknown",
+      "policy": "{\"Version\":\"2012-10-17\",\"Statement\":\"x\",\"Foo\":1}",
+      "error": {
+        "status": 400,
+        "code": "MalformedPolicy",
+        "message": "Unknown field Foo"
+      }
+    },
+    {
+      "id": "order-statement-unknown-then-document-unknown",
+      "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"arn:aws:iam::111122223333:root\"},\"Action\":\"s3:GetObject\",\"Resource\":\"arn:aws:s3:::floci-policy-capture/*\",\"Foo\":1}],\"Bar\":1}",
+      "error": {
+        "status": 400,
+        "code": "MalformedPolicy",
+        "message": "Unknown field Bar"
+      }
+    },
+    {
+      "id": "order-bad-statement-then-trailing-content",
+      "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Permit\",\"Principal\":{\"AWS\":\"arn:aws:iam::111122223333:root\"},\"Action\":\"s3:GetObject\",\"Resource\":\"arn:aws:s3:::floci-policy-capture/*\"}]} x",
+      "error": {
+        "status": 400,
+        "code": "MalformedPolicy",
+        "message": "Invalid policy syntax."
+      }
+    },
+    {
+      "id": "order-repeated-then-trailing-content",
+      "policy": "{\"Version\":\"2012-10-17\",\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"arn:aws:iam::111122223333:root\"},\"Action\":\"s3:GetObject\",\"Resource\":\"arn:aws:s3:::floci-policy-capture/*\"}]} x",
+      "error": {
+        "status": 400,
+        "code": "MalformedPolicy",
+        "message": "Invalid policy syntax."
+      }
+    },
+    {
+      "id": "order-no-statement-then-trailing-content",
+      "policy": "{\"Version\":\"2012-10-17\"} x",
+      "error": {
+        "status": 400,
+        "code": "MalformedPolicy",
+        "message": "Missing required field Statement"
+      }
+    },
+    {
+      "id": "order-bad-effect-then-no-principal",
+      "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Permit\",\"Action\":\"s3:GetObject\",\"Resource\":\"arn:aws:s3:::floci-policy-capture/*\"}]}",
+      "error": {
+        "status": 400,
+        "code": "MalformedPolicy",
+        "message": "Missing required field Principal"
+      }
+    },
+    {
+      "id": "order-repeated-then-no-effect",
+      "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Principal\":{\"AWS\":\"arn:aws:iam::111122223333:root\"},\"Action\":\"s3:GetObject\",\"Resource\":\"arn:aws:s3:::floci-policy-capture/*\",\"Principal\":{\"AWS\":\"arn:aws:iam::111122223333:root\"}}]}",
+      "error": {
+        "status": 400,
+        "code": "MalformedPolicy",
+        "message": "Missing required field Effect"
+      }
+    },
+    {
+      "id": "order-repeated-then-no-action",
+      "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"arn:aws:iam::111122223333:root\"},\"Resource\":\"arn:aws:s3:::floci-policy-capture/*\",\"Effect\":\"Allow\"}]}",
+      "error": {
+        "status": 400,
+        "code": "MalformedPolicy",
+        "message": "Missing required field Action"
+      }
+    },
+    {
+      "id": "order-conflict-then-no-action",
+      "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"arn:aws:iam::111122223333:root\"},\"NotPrincipal\":{\"AWS\":\"arn:aws:iam::111122223333:root\"},\"Resource\":\"arn:aws:s3:::floci-policy-capture/*\"}]}",
+      "error": {
+        "status": 400,
+        "code": "MalformedPolicy",
+        "message": "Missing required field Action"
+      }
+    },
+    {
+      "id": "order-numeric-sid-then-no-effect",
+      "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Sid\":1,\"Principal\":{\"AWS\":\"arn:aws:iam::111122223333:root\"},\"Action\":\"s3:GetObject\",\"Resource\":\"arn:aws:s3:::floci-policy-capture/*\"}]}",
+      "error": {
+        "status": 400,
+        "code": "MalformedPolicy",
+        "message": "Missing required field Effect"
+      }
+    },
+    {
+      "id": "order-numeric-action-then-no-resource",
+      "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"arn:aws:iam::111122223333:root\"},\"Action\":1}]}",
+      "error": {
+        "status": 400,
+        "code": "MalformedPolicy",
+        "message": "Invalid policy syntax."
+      }
+    },
+    {
+      "id": "order-empty-action-then-no-effect",
+      "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Principal\":{\"AWS\":\"arn:aws:iam::111122223333:root\"},\"Action\":[],\"Resource\":\"arn:aws:s3:::floci-policy-capture/*\"}]}",
+      "error": {
+        "status": 400,
+        "code": "MalformedPolicy",
+        "message": "Missing required field Effect"
+      }
+    },
+    {
+      "id": "order-empty-resource-then-bad-action",
+      "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"arn:aws:iam::111122223333:root\"},\"Action\":\"GetObject\",\"Resource\":[]}]}",
+      "error": {
+        "status": 400,
+        "code": "MalformedPolicy",
+        "message": "Policy has invalid action"
+      }
+    },
+    {
+      "id": "order-bad-condition-then-no-effect",
+      "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Principal\":{\"AWS\":\"arn:aws:iam::111122223333:root\"},\"Action\":\"s3:GetObject\",\"Resource\":\"arn:aws:s3:::floci-policy-capture/*\",\"Condition\":{\"StringEqualz\":{\"aws:UserAgent\":\"a\"}}}]}",
+      "error": {
+        "status": 400,
+        "code": "MalformedPolicy",
+        "message": "Missing required field Effect"
+      }
+    },
+    {
+      "id": "order-repeated-condition-key-then-no-effect",
+      "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Principal\":{\"AWS\":\"arn:aws:iam::111122223333:root\"},\"Action\":\"s3:GetObject\",\"Resource\":\"arn:aws:s3:::floci-policy-capture/*\",\"Condition\":{\"StringEquals\":{\"aws:UserAgent\":\"a\",\"aws:UserAgent\":\"b\"}}}]}",
+      "error": {
+        "status": 400,
+        "code": "MalformedPolicy",
+        "message": "Missing required field Effect"
+      }
+    },
+    {
+      "id": "order-bad-condition-then-next-statement-no-effect",
+      "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"arn:aws:iam::111122223333:root\"},\"Action\":\"s3:GetObject\",\"Resource\":\"arn:aws:s3:::floci-policy-capture/*\",\"Condition\":{\"StringEqualz\":{\"aws:UserAgent\":\"a\"}}},{\"Principal\":{\"AWS\":\"arn:aws:iam::111122223333:root\"},\"Action\":\"s3:GetObject\",\"Resource\":\"arn:aws:s3:::floci-policy-capture/*\"}]}",
+      "error": {
+        "status": 400,
+        "code": "MalformedPolicy",
+        "message": "Missing required field Effect"
+      }
+    },
+    {
+      "id": "order-numeric-action-then-next-statement-no-effect",
+      "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"arn:aws:iam::111122223333:root\"},\"Action\":1,\"Resource\":\"arn:aws:s3:::floci-policy-capture/*\"},{\"Principal\":{\"AWS\":\"arn:aws:iam::111122223333:root\"},\"Action\":\"s3:GetObject\",\"Resource\":\"arn:aws:s3:::floci-policy-capture/*\"}]}",
+      "error": {
+        "status": 400,
+        "code": "MalformedPolicy",
+        "message": "Missing required field Effect"
+      }
+    },
+    {
+      "id": "order-bad-principal-then-next-statement-no-effect",
+      "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"bob\"},\"Action\":\"s3:GetObject\",\"Resource\":\"arn:aws:s3:::floci-policy-capture/*\"},{\"Principal\":{\"AWS\":\"arn:aws:iam::111122223333:root\"},\"Action\":\"s3:GetObject\",\"Resource\":\"arn:aws:s3:::floci-policy-capture/*\"}]}",
+      "error": {
+        "status": 400,
+        "code": "MalformedPolicy",
+        "message": "Missing required field Effect"
+      }
+    },
+    {
+      "id": "service-foreign-action",
+      "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"arn:aws:iam::111122223333:root\"},\"Action\":\"sqs:SendMessage\",\"Resource\":\"arn:aws:s3:::floci-policy-capture/*\"}]}",
+      "error": {
+        "status": 400,
+        "code": "MalformedPolicy",
+        "message": "Policy has invalid action"
+      }
+    },
+    {
+      "id": "service-undefined-action",
+      "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"arn:aws:iam::111122223333:root\"},\"Action\":\"s3:FlociUndefinedAction\",\"Resource\":\"arn:aws:s3:::floci-policy-capture/*\"}]}",
+      "error": {
+        "status": 400,
+        "code": "MalformedPolicy",
+        "message": "Policy has invalid action"
+      }
+    },
+    {
+      "id": "service-foreign-resource",
+      "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"arn:aws:iam::111122223333:root\"},\"Action\":\"s3:GetObject\",\"Resource\":\"arn:aws:sqs:us-east-1:111122223333:floci-capture-queue\"}]}",
+      "error": {
+        "status": 400,
+        "code": "MalformedPolicy",
+        "message": "Policy has invalid resource"
+      }
+    },
+    {
+      "id": "service-missing-principal",
+      "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"arn:aws:iam::111122223333:role/floci-capture-missing-role\"},\"Action\":\"s3:GetObject\",\"Resource\":\"arn:aws:s3:::floci-policy-capture/*\"}]}",
+      "error": {
+        "status": 400,
+        "code": "MalformedPolicy",
+        "message": "Invalid principal in policy"
+      }
+    },
+    {
+      "id": "service-undefined-condition-key",
+      "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"arn:aws:iam::111122223333:root\"},\"Action\":\"s3:GetObject\",\"Resource\":\"arn:aws:s3:::floci-policy-capture/*\",\"Condition\":{\"StringEquals\":{\"s3:FlociUndefinedKey\":\"a\"}}}]}",
+      "error": {
+        "status": 400,
+        "code": "MalformedPolicy",
+        "message": "Policy has an invalid condition key"
+      }
+    },
+    {
+      "id": "service-undefined-global-condition-key",
+      "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"AWS\":\"arn:aws:iam::111122223333:root\"},\"Action\":\"s3:GetObject\",\"Resource\":\"arn:aws:s3:::floci-policy-capture/*\",\"Condition\":{\"StringEquals\":{\"aws:FlociUndefinedKey\":\"a\"}}}]}",
+      "accepted": true
+    }
+  ]
+}
