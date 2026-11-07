@@ -46,6 +46,8 @@ public class CloudFormationYamlParser {
 
         CfnConstructor(LoaderOptions opts) {
             super(opts);
+            // CloudFormation keeps unquoted dates such as `Version: 2012-10-17` as the literal string.
+            yamlConstructors.put(Tag.TIMESTAMP, new ConstructYamlStr());
             // Register all CloudFormation shorthand tags
             register("!Ref",        n -> scalarMap("Ref", scalar(n)));
             register("!Sub",        n -> fnMap("Fn::Sub", n));

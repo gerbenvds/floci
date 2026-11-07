@@ -339,6 +339,87 @@ class CloudFormationS3BucketPropertiesIntegrationTest {
                 "the policy's physical id is its bucket: " + xml);
     }
 
+    private static String yamlPolicyTemplate(String bucket, String statement) {
+        return """
+            Resources:
+              PolicyBucket:
+                Type: AWS::S3::Bucket
+                Properties:
+                  BucketName: %s
+              PolicyBucketPolicy:
+                Type: AWS::S3::BucketPolicy
+                Properties:
+                  Bucket: !Ref PolicyBucket
+                  PolicyDocument:
+                    Version: 2012-10-17
+                    Statement:
+            %s
+            """.formatted(bucket, statement.indent(10).stripTrailing());
+    }
+
+    /**
+     * An unquoted {@code Version: 2012-10-17} is the string CloudFormation and AWS's own YAML
+     * examples use, not a YAML timestamp, so the policy reaches S3 with the version as written.
+     */
+    @Test
+    void aYamlPolicyWithAnUnquotedVersionIsPutAsWritten() throws InterruptedException {
+        String suffix = Long.toString(System.nanoTime(), 36);
+        String bucket = "cfn-yaml-policy-" + suffix;
+        String stackId = stack("CreateStack", "cfn-yaml-policy-stack-" + suffix, yamlPolicyTemplate(bucket, """
+                - Sid: DenyInsecureTransport
+                  Effect: Deny
+                  Principal: "*"
+                  Action: s3:*
+                  Resource: !Sub "${PolicyBucket.Arn}/*"
+                  Condition:
+                    Bool:
+                      aws:SecureTransport: "false"
+                """));
+        await(stackId, "CREATE_COMPLETE");
+
+        bucketGet(bucket, "policy")
+            .body(containsString("\"Version\":\"2012-10-17\""))
+            .body(containsString("DenyInsecureTransport"));
+    }
+
+    /** The bucket policy grammar applies to a document from a template as it does to PutBucketPolicy. */
+    @Test
+    void aYamlPolicyMissingAPrincipalFailsTheCreate() throws InterruptedException {
+        String suffix = Long.toString(System.nanoTime(), 36);
+        String bucket = "cfn-yaml-policy-bad-" + suffix;
+        String stackId = stack("CreateStack", "cfn-yaml-policy-bad-stack-" + suffix, yamlPolicyTemplate(bucket, """
+                - Effect: Allow
+                  Action: s3:GetObject
+                  Resource: !Sub "${PolicyBucket.Arn}/*"
+                """));
+        await(stackId, "ROLLBACK_COMPLETE");
+
+        String reason = failureReasonOf(stackEvents(stackId), "PolicyBucketPolicy", "CREATE_FAILED");
+        assertTrue(reason.contains("Missing required field Principal"),
+                "the policy failed on its missing principal: " + reason);
+        given().when().head("/" + bucket).then().statusCode(404);
+    }
+
+    /** The ResourceStatusReason of the event for one resource reaching one status. */
+    private static String failureReasonOf(String eventsXml, String logicalId, String status) {
+        String marker = "<LogicalResourceId>" + logicalId + "</LogicalResourceId>";
+        int from = 0;
+        while (true) {
+            int at = eventsXml.indexOf(marker, from);
+            assertTrue(at > 0, logicalId + " never reached " + status + ": " + eventsXml);
+            int memberStart = eventsXml.lastIndexOf("<member>", at);
+            int memberEnd = eventsXml.indexOf("</member>", at);
+            String member = eventsXml.substring(memberStart, memberEnd);
+            if (member.contains("<ResourceStatus>" + status + "</ResourceStatus>")) {
+                int reasonStart = member.indexOf("<ResourceStatusReason>");
+                assertTrue(reasonStart > 0, logicalId + " has no reason: " + member);
+                reasonStart += "<ResourceStatusReason>".length();
+                return member.substring(reasonStart, member.indexOf("</ResourceStatusReason>", reasonStart));
+            }
+            from = memberEnd;
+        }
+    }
+
     /** The PhysicalResourceId of one member of a DescribeStackResources response. */
     private static String physicalIdOf(String xml, String logicalId) {
         String marker = "<LogicalResourceId>" + logicalId + "</LogicalResourceId>";
