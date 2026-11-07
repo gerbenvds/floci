@@ -5778,11 +5778,17 @@ public class S3Service implements Resettable, ResourceProvider {
     }
 
     /**
-     * {@code BlockPublicPolicy} rejects a bucket policy that grants public access. As on AWS the
-     * check runs whoever the caller is, so it does not sit behind {@code enforce-auth}, and it
-     * leaves an already-stored public policy alone: the setting blocks the write, not the read.
+     * Checks in the order AWS does: a missing bucket, then a policy that breaks the grammar
+     * ({@code MalformedPolicy}, see {@link S3BucketPolicyValidator}), then {@code BlockPublicPolicy},
+     * which rejects a bucket policy that grants public access. As on AWS that check runs whoever the
+     * caller is, so it does not sit behind {@code enforce-auth}, and it leaves an already-stored
+     * public policy alone: the setting blocks the write, not the read.
      */
     public void putBucketPolicy(String bucketName, String policy) {
+        if (resolveBucketEntry(bucketName).isEmpty()) {
+            throw new AwsException("NoSuchBucket", "The specified bucket does not exist.", 404);
+        }
+        S3BucketPolicyValidator.validate(policy);
         if (effectiveBlockPublicAccess(bucketName).blockPublicPolicy()
                 && S3PublicAccessEvaluator.policyIsPublic(objectMapper, policy)) {
             LOG.debugv("BlockPublicPolicy rejected a public bucket policy on bucket {0}", bucketName);

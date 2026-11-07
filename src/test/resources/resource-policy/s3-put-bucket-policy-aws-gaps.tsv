@@ -1,0 +1,8 @@
+# Cases S3 PutBucketPolicy answers differently from Floci, each with the reason: id<TAB>reason.
+# S3BucketPolicyAwsCorpusTest fails when a listed case starts matching, so remove it then.
+resource-not-resource	S3 rejects a statement whose actions apply to none of its resources; Floci does not match actions to resources
+service-foreign-action	S3 accepts only S3 actions; Floci checks the action's shape, not its service
+service-undefined-action	S3 rejects an S3 action it does not define; Floci does not know S3's action list
+service-foreign-resource	S3 accepts only resources of the bucket; Floci checks the resource's shape, not its service
+service-missing-principal	S3 resolves each principal and rejects one that does not exist; Floci checks the principal's shape only
+service-undefined-condition-key	S3 rejects an s3: condition key it does not define; Floci does not know S3's condition keys

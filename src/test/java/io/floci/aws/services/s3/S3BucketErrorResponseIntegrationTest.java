@@ -122,4 +122,23 @@ class S3BucketErrorResponseIntegrationTest {
         given().when().delete("/" + bucket + "/" + key).then().statusCode(204);
         given().when().delete("/" + bucket).then().statusCode(204);
     }
+
+    @Test
+    void malformedBucketPolicyIsRejectedAndNotStored() {
+        String bucket = "error-response-policy-bucket";
+        given().when().put("/" + bucket).then().statusCode(200);
+
+        given().body("{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\","
+                        + "\"Action\":\"s3:GetObject\",\"Resource\":\"arn:aws:s3:::" + bucket + "/*\"}]}")
+                .when().put("/" + bucket + "?policy").then().statusCode(400)
+                .body(containsString("<Code>MalformedPolicy</Code>"))
+                .body(containsString("<Message>Missing required field Principal</Message>"));
+        given().when().get("/" + bucket + "?policy").then().statusCode(404)
+                .body(containsString("<Code>NoSuchBucketPolicy</Code>"));
+
+        given().body("not json").when().put("/error-response-policy-missing?policy").then().statusCode(404)
+                .body(containsString("<Code>NoSuchBucket</Code>"));
+
+        given().when().delete("/" + bucket).then().statusCode(204);
+    }
 }

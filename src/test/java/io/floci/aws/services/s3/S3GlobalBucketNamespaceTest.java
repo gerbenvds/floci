@@ -439,7 +439,8 @@ class S3GlobalBucketNamespaceTest {
         globalNs.createBucket("central-logs-bucket", "us-east-1");
 
         caller.set(DEFAULT_ACCT);
-        String policy = "{\"Version\":\"2012-10-17\",\"Statement\":[]}";
+        String policy = "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Deny\",\"Principal\":\"*\","
+                + "\"Action\":\"s3:DeleteBucket\",\"Resource\":\"arn:aws:s3:::central-logs-bucket\"}]}";
         assertDoesNotThrow(() -> globalNs.putBucketPolicy("central-logs-bucket", policy));
         assertEquals(policy, globalNs.getBucketPolicy("central-logs-bucket"));
 
